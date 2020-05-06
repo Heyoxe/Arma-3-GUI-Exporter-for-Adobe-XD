@@ -1,0 +1,29 @@
+{
+    "id": "196b5012E",
+    "name": "Arma 3 GUI Exporter",
+    "version": "0.0.1",
+    "description": "Genereates a read to use .hpp file for Arma 3.",
+    "summary": "Export your User Interfaces directly to Arma 3",
+    "languages": ["en"],
+    "author": "Heyoxe (Echo)",
+    "helpUrl": "https://a3ge.heyoxe.ch/help/",
+    "host": {
+      "app": "XD",
+      "minVersion": "21.0"
+    },
+    "uiEntryPoints": [
+        {
+            "type": "menu",
+            "label": "Export Rendition",
+            "commandId": "exportRendition",
+            "shortcut": {
+                "win": "Ctrl+Q"
+            }
+        },
+        {
+            "type": "panel",
+            "label": "Modify Attributes of your Control",
+            "panelId": "controlPanel"
+          }
+    ]
+  }
