@@ -52,8 +52,9 @@ let application = require("application");
 let ids = [];
 
 const os = require("os")
+const fs = require("uxp").storage.localFileSystem;
 
-async function exportRendition(selection) {
+async function main(selection) {
     ids = [];
     assets = require("assets");
     assets.colors.get().forEach(color => {
@@ -67,10 +68,10 @@ async function exportRendition(selection) {
     const tree = selection.items.map(display => parseItem(display));
     let credits = `/*
     Generate with Arma 3 GUI Exporter (A3GE) for Adobe XD
-    
+
     Discord: https://discord.gg/QDGatN2/
     Website: https://a3ge.heyoxe.ch/xd/
-    
+
     Application Version: ${application.version}
     Application Language: ${application.appLanguage}
 
@@ -82,7 +83,7 @@ async function exportRendition(selection) {
 */
 
 // The generated files are not allowed to be used on a monetized platform unless you own a valid licence (see https://a3ge.heyoxe.ch/licence/).`;
-    let header = `/* Positions */
+let header = `/* Positions */
 #define XD_Position_X(X) #((((X * (getResolution select 0)) / 1920) * safeZoneW) / (getResolution select 0) + safeZoneX)
 #define XD_Position_Y(Y) #((((Y * (getResolution select 1)) / 1080) * safeZoneH) / (getResolution select 1) + safeZoneY)
 #define XD_Position_W(W) #((((W * (getResolution select 0)) / 1920) * safeZoneW) / (getResolution select 0))
@@ -92,11 +93,19 @@ async function exportRendition(selection) {
 `;
     if (Object.values(colors).length > 0) { header += `\n/* Colors */\n`};
     header += Object.values(colors).map(color => `#define ${color.name} { ${color.value.toString().replace(/,/gm, ", ")} }`).join('\n');
-
+    
     if (ids.length > 0) { header += `\n\n/* IDXs */\n`};
     header += ids.map(id => `#define ${id[0]} ${id[1]}`).join('\n')
     const body = tree.map(display => drawItem(display, {}, 0, false)).join(`\n\n`);
-    console.log([credits, header, body].join('\n\n'));
+    return ([credits, header, body].join('\n\n'));
+}
+
+async function exportRendition(selection) {
+    const core = main(selection)
+    // console.log([credits, header, body].join('\n\n'));
+    // const folder = await fs.getFolder();
+    const file = await fs.getFileForSaving("dialog.hpp", { types: ["hpp"]});
+    await file.write(await core);
 };
 
 function drawItem(item, parent, tabs, inGroup) {
@@ -248,7 +257,7 @@ function parseItem(item) {
             id: `XD_Control_${item.guid.replace(/\-/g, "")}`,
             guid: item.guid,
             name: item.name.replace(/[\t,\n]/gm, ""),
-            normalizedName: item.name.replace(/ /gm, "_").replace(/[\t,\n]/gm, ""),
+            normalizedName: item.name.replace(/ /gm, "_").replace(/\–/gm, "_").replace(/[\t,\n]/gm, ""),
             length: (item.children.length),
             type: item.constructor.name,
             idd: count,
