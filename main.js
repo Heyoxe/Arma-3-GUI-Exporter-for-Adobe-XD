@@ -7,6 +7,8 @@ let ids = [];
 const os = require("os")
 const fs = require("uxp").storage.localFileSystem;
 
+const enableAdditionalMeta = true;
+
 async function main(selection) {
     ids = [];
     assets = require("assets");
@@ -19,8 +21,17 @@ async function main(selection) {
     });
     count = Math.floor(Math.random() * 10000) + 10000;
     const tree = selection.items.map(display => parseItem(display));
+    const timeOptions = { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: 'numeric', 
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short"
+    }
     let credits = `/*
-    Generate with Arma 3 GUI Exporter (A3GE) for Adobe XD
+    Generate with Arma 3 GUI Exporter (A3GE) for Adobe XD on ${new Date().toLocaleDateString('en-GB', timeOptions)}
 
     Discord: https://discord.gg/QDGatN2/
     Website: https://a3ge.heyoxe.ch/xd/
@@ -63,6 +74,32 @@ function drawItem(item, parent, tabs, inGroup) {
     let data = ``;
     let attributes = [];
     let type = item.meta.type;
+    if (type !== "Artboard") {
+        if (enableAdditionalMeta) {
+            attributes = [
+                "Meta",
+                ["idc", { value: (item.meta.idcName || item.meta.idc) }],
+                ["id", item.meta.id],
+                ["guid", item.meta.guid],
+                ["name", item.meta.name],
+                ["normalizedName", item.meta.normalizedName],
+                ["xtype", item.meta.type]
+            ];
+        } else {
+            attributes = [
+                ["idc", { value: (item.meta.idcName || item.meta.idc) }]
+            ];
+        };
+        attributes = attributes.concat([
+            "Interaction",
+            ["onLoad", item.interaction.onLoad],
+            "Position",
+            ["x", { value: `XD_Position_X${(inGroup) ? 'Group' : ''}(${item.position.x - parent.position.x})` }],
+            ["y", { value: `XD_Position_Y${(inGroup) ? 'Group' : ''}(${item.position.y - parent.position.y})` }],
+            ["w", { value: `XD_Position_W(${item.position.w})` }],
+            ["h", { value: `XD_Position_H(${item.position.h})` }]
+        ])
+    };
     let colorbh;
     if (item.design.hasColor) {
         if (colors[item.design.colorBackground.value] === undefined) {
@@ -79,10 +116,10 @@ function drawItem(item, parent, tabs, inGroup) {
         colorbh = [255, 255, 255, 0].map(v => (v / 255).toFixed(3))
     }
     if (type === "Artboard") {
-        data += `${align(tabs)}class ${item.meta.id} {`
+        data += `${align(tabs)}class ${item.meta.totalName} {`
         attributes = [
             "Meta",
-            ["idd", item.meta.idd],
+            ["idd", { value: (item.meta.iddName || item.meta.idd) }],
             ["id", item.meta.id],
             ["guid", item.meta.guid],
             ["name", item.meta.name],
@@ -92,72 +129,21 @@ function drawItem(item, parent, tabs, inGroup) {
             ["onLoad", item.interaction.onLoad]
         ];
     } else if (type === "Text") {
-        data += `${align(tabs)}class ${item.meta.id}: ${item.design.type} {`
-        attributes = [
-            "Meta",
-            ["idc", item.meta.idd],
-            ["id", item.meta.id],
-            ["guid", item.meta.guid],
-            ["name", item.meta.name],
-            ["normalizedName", item.meta.normalizedName],
-            ["xtype", item.meta.type],
-            "Interaction",
-            ["onLoad", item.interaction.onLoad],
+        data += `${align(tabs)}class ${item.meta.totalName}: ${item.design.type} {`
+        attributes = attributes.concat([
             "Design",
             ["colorText[]", colorbh],
-            ["text", item.design.text],
-            "Position",
-            ["x", { value: `XD_Position_X${(inGroup) ? 'Group' : ''}(${item.position.x - parent.position.x})` }],
-            ["y", { value: `XD_Position_Y${(inGroup) ? 'Group' : ''}(${item.position.y - parent.position.y})` }],
-            ["w", { value: `XD_Position_W(${item.position.w})` }],
-            ["h", { value: `XD_Position_H(${item.position.h})` }]
-        ];
+            ["text", item.design.text]
+        ]);
     } else if ((type === "Group") || (type === "RepeatGrid")) {
         item.meta.inheritsFrom = "RscControlsGroupNoScrollbars";
-        data += `${align(tabs)}class ${item.meta.id}: ${item.meta.inheritsFrom} {`
-        attributes = [
-            "Meta",
-            ["idc", item.meta.idd],
-            ["id", item.meta.id],
-            ["guid", item.meta.guid],
-            ["name", item.meta.name],
-            ["normalizedName", item.meta.normalizedName],
-            ["xtype", item.meta.type],
-            "Interaction",
-            ["onLoad", item.interaction.onLoad],
-            "Position",
-            ["x", { value: `XD_Position_X${(inGroup) ? 'Group' : ''}(${item.position.x - parent.position.x})` }],
-            ["y", { value: `XD_Position_Y${(inGroup) ? 'Group' : ''}(${item.position.y - parent.position.y})` }],
-            ["w", { value: `XD_Position_W(${item.position.w})` }],
-            ["h", { value: `XD_Position_H(${item.position.h})` }]
-        ];
+        data += `${align(tabs)}class ${item.meta.totalName}: ${item.meta.inheritsFrom} {`
     } else {
-        /*
-            guid: item.guid,
-            name: item.name,
-            normalizedName: item.name.replace(/ /gm, "_"),
-            length: (item.children.length),
-            type: item.constructor.name,
-        */
-        data += `${align(tabs)}class ${item.meta.id}: ${item.meta.inheritsFrom || "IGUIBack"} {`
-        attributes = [
-            "Meta",
-            ["idc", item.meta.idd],
-            ["id", item.meta.id],
-            ["guid", item.meta.guid],
-            ["name", item.meta.name],
-            ["normalizedName", item.meta.normalizedName],
-            ["xtype", item.meta.type],
-            "Interaction",
-            ["onLoad", item.interaction.onLoad],
+        data += `${align(tabs)}class ${item.meta.totalName}: ${item.meta.inheritsFrom || "IGUIBack"} {`
+        attributes = attributes.concat([
             "Design",
-            ["colorBackground[]", colorbh],
-            "Position",
-            ["x", { value: `XD_Position_X${(inGroup) ? 'Group' : ''}(${item.position.x - parent.position.x})` }],
-            ["y", { value: `XD_Position_Y${(inGroup) ? 'Group' : ''}(${item.position.y - parent.position.y})` }],
-            ["w", { value: `XD_Position_W(${item.position.w})` }],
-            ["h", { value: `XD_Position_H(${item.position.h})` }]
-        ];
+            ["colorBackground[]", colorbh]
+        ]);
     };
 
     let line = -1;
@@ -198,7 +184,7 @@ function parseAttribute(key, attribute) {
     };
 };
 
-function parseItem(item) {
+function parseItem(item, parentName = "") {
     let type = item.constructor.name;
     count++;
     const { Color } = require("scenegraph");
@@ -208,10 +194,12 @@ function parseItem(item) {
             guid: item.guid,
             name: item.name.replace(/[\t,\n]/gm, ""),
             normalizedName: item.name.replace(/ /gm, "_").replace(/\–/gm, "_").replace(/[\t,\n]/gm, ""),
+            totalName: '',
             length: (item.children.length),
             type: item.constructor.name,
             idd: count,
-            idc: count
+            idc: count,
+            idcName: ""
         },
         position: {
             x: item.globalBounds.x,
@@ -225,11 +213,15 @@ function parseItem(item) {
         },
         interaction: {
             onLoad: "",
-        },
-        controls: item.children
-            .filter(child => (["Rectangle", "Artboard", "Group", "RepeatGrid", "Text", "Image"].indexOf(child.constructor.name) > -1) && ((child.fill instanceof Color) || child.fill === undefined))
-            .map(control => parseItem(control))
+        }
     };
+
+    data.meta.totalName = `${(parentName === '') ? data.meta.normalizedName : `${parentName}_${data.meta.name}` }`;
+    data.controls = item.children
+        .filter(child => (["Rectangle", "Artboard", "Group", "RepeatGrid", "Text", "Image"].indexOf(child.constructor.name) > -1) && ((child.fill instanceof Color) || child.fill === undefined))
+        .map(control => parseItem(control, `${(type === 'Artboard') ? '' : data.meta.totalName}`));
+
+    console.log(data.meta.totalName);
 
     if (type === "Text") {
         data.design.type = `${(item.areaBox === null) ? 'RscText' : 'RscStructuredText'}`;
@@ -244,7 +236,7 @@ function parseItem(item) {
     };
 
     if ((data.meta.normalizedName !== "") && !item.hasDefaultName) {
-        let load = `uiNamespace setVariable ['#XD_${(type === "Artboard") ? 'Display' : 'Control'}_${data.meta.normalizedName}', (_this#0)];`
+        let load = `uiNamespace setVariable ['#XD_${(type === "Artboard") ? 'Display' : 'Control'}_${data.meta.totalName}', (_this#0)];`
         if (data.interaction.onLoad !== "") {
             load += ` ${data.interaction.onLoad}`;
         };
@@ -258,7 +250,14 @@ function parseItem(item) {
     };
 
     if (!item.hasDefaultName) {
-        ids.push([`XD_ID${(type === "Artboard") ? 'Display' : 'Control'}_${data.meta.normalizedName}`, count])
+        let value = `XD_ID${(type === "Artboard") ? 'Display' : 'Control'}_${data.meta.totalName}`;
+        let duplicates = ids.map(id => id[0]).filter(id => id.startsWith(value));
+        if (duplicates.length > 0) {
+            value += `_${duplicates.length}`;
+        };
+        ids.push([value, count])
+        data.meta.idcName = value;
+        data.meta.iddName = value;
     };
 
     if (type === "Artboard") {
