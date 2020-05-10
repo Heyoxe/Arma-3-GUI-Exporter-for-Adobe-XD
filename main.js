@@ -1,50 +1,3 @@
-// const application = require("application");
-// const fs = require("uxp").storage.localFileSystem;
-
-// async function exportRendition(selection) {
-//     assets = require("assets");
-//     let colors = assets.colors.get().map(color => [
-//         `XD_Color${(!color.name) ? `Auto_${color.color.toHex(true).slice(-6)}` : `User_${color.name}` }`, 
-//         color.color.toRgba()
-//     ]);
-//     console.log(colors)
-//     let data = ``;
-//     let content = {
-//         artboards: []
-//     };
-//     if (selection.items.length > 0) {
-//         selection.items.forEach(item => {
-//             content.artboards.push(navigateItem(item));
-//         });
-//         const dialogs = content.artboards.map(a => drawArtboard(a)).join('\n\n');
-//         const data = `/*
-//     Generated with A3GE (https://xd2a3.heyoxe.ch/)
-
-//     Plugin: https://adobe.com/
-//     Discord: https://discord.gg/QDGatN2/
-//     Website: https://xd2a3.heyoxe.ch/
-//     Licence: CC/BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode)
-// */
-// ${(colors.length === 0) ? '' : `
-// /* Colors */
-// ${colors.map(color => `#define ${color[0]} { ${color[1].r} / 255, ${color[1].g} / 255, ${color[1].b} / 255, ${color[1].a} / 255 }`).join('\n')}
-// `}
-// /* Dialogs */
-// ${dialogs}
-// `
-        
-//         const folder = await fs.getFolder();
-//         const file = await folder.createFile("render.hpp", { overwrite: true });
-//         file.write(data);
-//     };
-// };
-
-// module.exports = {
-//     commands: {
-//         exportRendition
-//     }
-// };
-
 let count = Math.floor(Math.random() * 10000) + 10000;
 let assets;
 let colors = {};
@@ -101,9 +54,7 @@ let header = `/* Positions */
 }
 
 async function exportRendition(selection) {
-    const core = main(selection)
-    // console.log([credits, header, body].join('\n\n'));
-    // const folder = await fs.getFolder();
+    const core = main(selection);
     const file = await fs.getFileForSaving("dialog.hpp", { types: ["hpp"]});
     await file.write(await core);
 };
@@ -120,7 +71,6 @@ function drawItem(item, parent, tabs, inGroup) {
                 colorbh = [rgba.r,rgba.g,rgba.b,rgba.a].map(v => (v / 255).toFixed(3))
             } catch (err) {
                 colorbh = [255, 255, 255, 255].map(v => (v / 255).toFixed(3))
-                // console.log(item)
             }
         } else {
             colorbh = { value: colors[item.design.colorBackground.value].name };
@@ -249,7 +199,7 @@ function parseAttribute(key, attribute) {
 };
 
 function parseItem(item) {
-    const type = item.constructor.name;
+    let type = item.constructor.name;
     count++;
     const { Color } = require("scenegraph");
     const data = {
@@ -277,15 +227,21 @@ function parseItem(item) {
             onLoad: "",
         },
         controls: item.children
-            .filter(child => (["Rectangle", "Artboard", "Group", "RepeatGrid", "Text"].indexOf(child.constructor.name) > -1) && ((child.fill instanceof Color) || child.fill === undefined))
+            .filter(child => (["Rectangle", "Artboard", "Group", "RepeatGrid", "Text", "Image"].indexOf(child.constructor.name) > -1) && ((child.fill instanceof Color) || child.fill === undefined))
             .map(control => parseItem(control))
     };
 
     if (type === "Text") {
         data.design.type = `${(item.areaBox === null) ? 'RscText' : 'RscStructuredText'}`;
-        data.design.text = item.text.replace(/[\t,\n]/gm, "");
+        data.design.text = item.text.replace(/[\t,\n]/gm, "<br/>");
     };
-    // console.log(type)
+
+    if (item.hasLinkedGraphicFill) {
+        type = "Image";
+        data.meta.type = type;
+        let color = new Color({ r: 255, g: 255, b: 255, a: 255 });
+        data.design.colorBackground = color;
+    };
 
     if ((data.meta.normalizedName !== "") && !item.hasDefaultName) {
         let load = `uiNamespace setVariable ['#XD_${(type === "Artboard") ? 'Display' : 'Control'}_${data.meta.normalizedName}', (_this#0)];`
