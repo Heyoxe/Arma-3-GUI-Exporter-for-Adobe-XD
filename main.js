@@ -1,4 +1,6 @@
-let count = Math.floor(Math.random() * 10000) + 10000;
+// let count = Math.floor(Math.random() * 10000) + 10000;
+let count = 0;
+let baseline = 0;
 let assets;
 let colors = {};
 let application = require("application");
@@ -19,7 +21,9 @@ async function main(selection) {
             value: [rgba.r,rgba.g,rgba.b,rgba.a].map(v => (v / 255).toFixed(3))
         };
     });
-    count = Math.floor(Math.random() * 10000) + 10000;
+    // count = Math.floor(Math.random() * 10000) + 10000;
+    baseline = Math.floor(Math.random() * 10000) + 10000;
+    count = 0;
     const tree = selection.items.map(display => parseItem(display));
     const timeOptions = { 
         year: 'numeric', 
@@ -59,7 +63,8 @@ let header = `/* Positions */
     header += Object.values(colors).map(color => `#define ${color.name} { ${color.value.toString().replace(/,/gm, ", ")} }`).join('\n');
     
     if (ids.length > 0) { header += `\n\n/* IDXs */\n`};
-    header += ids.map(id => `#define ${id[0]} ${id[1]}`).join('\n')
+    header += `#define XD_IDX_Base ${baseline} // Baseline ID\n\n`;
+    header += ids.map(id => `#define ${id[0]} XD_BASE_ID + ${id[1]}`).join('\n')
     const body = tree.map(display => drawItem(display, {}, 0, false)).join(`\n\n`);
     return ([credits, header, body].join('\n\n'));
 }
@@ -116,7 +121,7 @@ function drawItem(item, parent, tabs, inGroup) {
         colorbh = [255, 255, 255, 0].map(v => (v / 255).toFixed(3))
     }
     if (type === "Artboard") {
-        data += `${align(tabs)}class ${item.meta.totalName} {`
+        data += `${align(tabs)}class XdDisplay${item.meta.totalName} {`
         attributes = [
             "Meta",
             ["idd", { value: (item.meta.iddName || item.meta.idd) }],
@@ -184,9 +189,12 @@ function parseAttribute(key, attribute) {
     };
 };
 
+let duplicatemap = [];
+
 function parseItem(item, parentName = "") {
     let type = item.constructor.name;
-    count++;
+    count = count + 1;
+    console.log(`${item.name}: ${count}`)
     const { Color } = require("scenegraph");
     const data = {
         meta: {
@@ -197,8 +205,8 @@ function parseItem(item, parentName = "") {
             totalName: '',
             length: (item.children.length),
             type: item.constructor.name,
-            idd: count,
-            idc: count,
+            idd: baseline + count,
+            idc: baseline + count,
             idcName: ""
         },
         position: {
@@ -217,11 +225,21 @@ function parseItem(item, parentName = "") {
     };
 
     data.meta.totalName = `${(parentName === '') ? data.meta.normalizedName : `${parentName}_${data.meta.name}` }`;
+    if (!item.hasDefaultName) {
+        let value = `XD_ID${(type === "Artboard") ? 'Display' : 'Control'}_${data.meta.totalName}`;
+        let duplicates = duplicatemap.filter(id => id === value);
+        duplicatemap.push(value);
+        if (duplicates.length > 0) {
+            value += `_${duplicates.length}`;
+        };
+        ids.push([value, count])
+        data.meta.idcName = value;
+        data.meta.iddName = value;
+    };
+
     data.controls = item.children
         .filter(child => (["Rectangle", "Artboard", "Group", "RepeatGrid", "Text", "Image"].indexOf(child.constructor.name) > -1) && ((child.fill instanceof Color) || child.fill === undefined))
-        .map(control => parseItem(control, `${(type === 'Artboard') ? '' : data.meta.totalName}`));
-
-    console.log(data.meta.totalName);
+        .map(control => parseItem(control, `${(type === 'Artboard') ? data.meta.totalName : data.meta.totalName}`));
 
     if (type === "Text") {
         data.design.type = `${(item.areaBox === null) ? 'RscText' : 'RscStructuredText'}`;
@@ -247,17 +265,6 @@ function parseItem(item, parentName = "") {
         data.meta.inheritsFrom = item.pluginData.from;
         data.interaction.onLoad = item.pluginData.onLoad;
         // data.meta.type = item.pluginData.type;
-    };
-
-    if (!item.hasDefaultName) {
-        let value = `XD_ID${(type === "Artboard") ? 'Display' : 'Control'}_${data.meta.totalName}`;
-        let duplicates = ids.map(id => id[0]).filter(id => id.startsWith(value));
-        if (duplicates.length > 0) {
-            value += `_${duplicates.length}`;
-        };
-        ids.push([value, count])
-        data.meta.idcName = value;
-        data.meta.iddName = value;
     };
 
     if (type === "Artboard") {
