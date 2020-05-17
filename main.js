@@ -378,7 +378,6 @@ async function exportContent(selection) {
         };
         SettingsHelper.setAll(settings);
         if (state !== "reasonCanceled") {
-            // console.log(selection);
             let content = await generateContent(selection);
             let file = exportFile;
             if (file === null || file === undefined || file.write === undefined) {
@@ -389,7 +388,7 @@ async function exportContent(selection) {
             };
         };
     } catch (error) {
-        console.log(error.stack);
+        if (error.stack !== undefined) console.log(error.stack);
         showError(error.name, error.message, error.stack);
     };
 };
@@ -617,17 +616,10 @@ ${stack}
         var xhr = new XMLHttpRequest();
         xhr.withCredentials = true;
         
-        xhr.addEventListener("readystatechange", function() {
-          if(this.readyState === 4) {
-            console.log(this.responseText);
-          }
-        });
-        
         xhr.open("POST", url);
         xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
         xhr.send(data);
-        console.log("Sent");
     });
     errorDialog.querySelector("#sent").style.visibility = "hidden";
     errorDialog.querySelector("#copy").style.visibility = "visible";
