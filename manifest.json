@@ -13,17 +13,12 @@
     },
     "uiEntryPoints": [
         {
-            "type": "menu",
-            "label": "Export GUI",
-            "commandId": "exportRendition",
-            "shortcut": {
-                "win": "Ctrl+Q"
-            }
-        },
-        {
-            "type": "panel",
-            "label": "Modify Attributes of your Control",
-            "panelId": "controlPanel"
+          "type": "menu",
+          "label": "Export GUI",
+          "commandId": "exportContent",
+          "shortcut": {
+            "win": "Ctrl+Q"
           }
+        }
     ]
   }
