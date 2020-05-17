@@ -394,44 +394,31 @@ ${IDs.join('\n')}
 
 let baseline = Math.floor(Math.random() * 10000) + 10000;
 async function exportContent(selection) {
-    // const value = await SettingsHelper.get('licencekey');
-    // console.log(value);
-    // if (value === undefined) {
-    //     const result = await SettingsHelper.set('licencekey', 0);
-    //     console.log(result);
-    // };
-    // settings = await SettingsHelper.getAll();
-    // // baseline = await SettingsHelper.get('IdBaseline', (Math.floor(Math.random() * 10000) + 10000));
-    // baseline = settings.IdBaseline || await SettingsHelper.get('IdBaseline', (Math.floor(Math.random() * 10000) + 10000));
-    // let content = await generateContent(selection);
-    // const file = await FS.getFileForSaving("dialog.hpp", { types: ["hpp"]});
-    // if (file === null) {
-    //     console.log("You must select a file!");
-    // } else {
-    //     await file.write(content);
-    // };
     try {
+        // let scene = require("scenegraph");
+        // scene.root.pluginData = undefined
         settings = await SettingsHelper.getAll(settings);
+        console.log(settings);
         let state = await showSettings();
         let main = settingsDialog.querySelector("#a3gesettings");
         settings = {
             licensekey: main.querySelector("#key").value,
             IdBaseline: main.querySelector("#id").value,
-            exportMeta: (main.querySelector("#meta").value === 'on') ? true : false,
-            addComments: (main.querySelector("#comments").value === 'on') ? true : false,
-            exportInteractions: (main.querySelector("#interactions").value === 'on') ? true : false,
-            exportImages: (main.querySelector("#images").value === 'on') ? true : false,
-            useIDXsMacros: (main.querySelector("#idxsmacros").value === 'on') ? true : false,
+            exportMeta: main.querySelector("#meta").checked,
+            addComments: main.querySelector("#comments").checked,
+            exportInteractions: main.querySelector("#interactions").checked,
+            exportImages: main.querySelector("#images").checked,
+            useIDXsMacros: main.querySelector("#idxsmacros").checked,
             positions: main.querySelector("#positionsmacros").value,
-            exportTo: main.querySelector("#path").innerHTML
         };
         SettingsHelper.setAll(settings);
         if (state !== "reasonCanceled") {
             let content = await generateContent(selection);
-            if (exportFile === null || exportFile === undefined) {
+            let file = exportFile;
+            if (file === null || file === undefined) {
                 throw { title: "No Folder Selected!", details: "You must select a folder before exporting!"};
             } else {
-                await exportFile.write(content);
+                await file.write(content);
                 showSuccess("Hooray!", "Your GUI was successfully exported into an Arma 3 compatible GUI format :)")
             };
         };
@@ -454,11 +441,10 @@ let settings = {
     exportImages: false,
     useIDXsMacros: true,
     positions: 'pixel',
-    exportTo: 'D:\\Echo\\Documents\\Pictures'
 };
 // a3gesettings
 let settingsDialog;
-let exportFile;
+let exportFile = {};
 function showSettings() {
     if (!settingsDialog) {
         settingsDialog = document.createElement("dialog");
@@ -557,7 +543,7 @@ function showSettings() {
                     <label>
                         <span>Export to</span>
                         <img class="iconsmall" src="./assets/folder.svg" />
-                        <p id="path">${settings.exportTo}</p>
+                        <p id="path">${exportFile.nativePath || "Please select a file..."}</p>
                         <button id="change" uxp-variant="primary" uxp-quiet="true">Change</button>
                     </label>
                 </div>

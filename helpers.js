@@ -18,7 +18,7 @@ class SettingsHelper {
         return file;      
     };
 
-    static async get(key, value = undefined) {
+    static async getLocal(key, value = undefined) {
         const file = await this.file();
         const object = JSON.parse(await file.read());
         if ((object[key] === undefined) && (value !== undefined)) {
@@ -29,7 +29,7 @@ class SettingsHelper {
         };
     };
 
-    static async set(key, value) {
+    static async setLocal(key, value) {
         const file = await this.file();
         const object = JSON.parse(await file.read());
         object[key] = value;
@@ -37,14 +37,11 @@ class SettingsHelper {
     };
 
     static async getAll(value) {
-        const file = await this.file(JSON.stringify(value));
-        const object = JSON.parse(await file.read());
-        return object;
+        return (require("scenegraph").root.pluginData || value);
     };
 
     static async setAll(object) {
-        const file = await this.file();
-        return await file.write(JSON.stringify(object), { append: false });
+        require("scenegraph").root.pluginData = object;
     };
 };
 
