@@ -610,16 +610,18 @@ ${stack}
 
         errorDialog.querySelector("#sent").style.visibility = "visible";
         errorDialog.querySelector("#copy").style.visibility = "hidden";
-        let url = "https://discordapp.com/api/webhooks/711711302938132501/R8GJpzTrugsaLEscTrCJ00semPeMe6yBJAoaftavsYsLcqk-LA3lp6YMsYjVCjBz0vOH";
-        var data = `content=${encodeURI(content)}`;
-
-        var xhr = new XMLHttpRequest();
-        xhr.withCredentials = true;
-        
-        xhr.open("POST", url);
-        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-
-        xhr.send(data);
+        let url = ""; /* Discord Webhook */
+        if (url !== "") {
+            var data = `content=${encodeURI(content)}`;
+    
+            var xhr = new XMLHttpRequest();
+            xhr.withCredentials = true;
+            
+            xhr.open("POST", url);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    
+            xhr.send(data);
+        };
     });
     errorDialog.querySelector("#sent").style.visibility = "hidden";
     errorDialog.querySelector("#copy").style.visibility = "visible";
