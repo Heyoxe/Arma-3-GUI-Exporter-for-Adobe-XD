@@ -51,7 +51,7 @@ function drawAttributes(attributes, tabs) {
 const nodrivepath = "\\ESE\\ESE_Main_E";
 function drawItem(node, tabs) {
     attributes = {};
-    let draw = `${align(tabs)}class ${node.arma.name}: ${node.arma.from} {\n`;
+    let draw = `${align(tabs)}class ${node.arma.name}: ${node.arma.from} {${settings.addComments ? '' : '\n'}`;
     addAttribute(node.parser.idType, node.arma[node.parser.idType], "Meta", true);
     addAttribute("guid",`"${node.guid}"`, "Meta", settings.exportMeta);
     // draw += `${align(tabs + 1)}${node.parser.idType} = ${node.arma[node.parser.idType]};\n`;
@@ -236,6 +236,10 @@ function indexItem(node, parent = { indexer: { type: 'Root' }, parser: { path: [
     /* Attributes parsing */
     data = parseText(node, data);
     data = parseColors(node, data);
+    const split = node.name.split(':');
+    if (split.length > 1) {
+        data.arma.from = split[1].trim();
+    };
 
     return data;
 };
@@ -335,7 +339,10 @@ function parseColors(item, data) {
 
 let allNodes = [];
 let scenegraph;
+
 function generateContent(selection) {
+    let application = require("application");
+    let os = require("os")
     scenegraph = require("scenegraph");
     id = -1;
     duplicates = [];
@@ -343,7 +350,34 @@ function generateContent(selection) {
     let nodes = selection.itemsIncludingLocked.map(node => indexItem(node));
     allNodes = nodes;
     let draw = nodes.map(node => drawItem(node, 0));
-    return `/* Positions */
+    const timeOptions = { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: 'numeric', 
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short"
+    }
+    return `/*
+    Generate with Arma 3 GUI Exporter (A3GE) for Adobe XD on ${new Date().toLocaleDateString('en-GB', timeOptions)}
+ 
+    Discord: https://discord.gg/QDGatN2/
+    GitHub: https://github.com/Heyoxe/Arma-3-GUI-Exporter-for-Adobe-XD
+
+    Application Version: ${application.version}
+    Application Language: ${application.appLanguage}
+
+    Document Name: ${application.activeDocument.name}
+
+    System Platform: ${os.platform()}
+    System Version: ${os.release()}
+    System Language: ${application.systemLocale}
+*/
+
+// The generated files are not allowed to be used on a monetized platform. If you want to do so, please contact Heyoxe#0557 on Discord.
+
+/* Positions */
 #define Xd_PositionX(X) #((((X * (getResolution select 0)) / 1920) * safeZoneW) / (getResolution select 0) + safeZoneX)
 #define Xd_PositionY(Y) #((((Y * (getResolution select 1)) / 1080) * safeZoneH) / (getResolution select 1) + safeZoneY)
 #define Xd_PositionW(W) #((((W * (getResolution select 0)) / 1920) * safeZoneW) / (getResolution select 0))
