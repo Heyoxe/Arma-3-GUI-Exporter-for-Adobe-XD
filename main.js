@@ -49,6 +49,9 @@ function drawAttributes(attributes, tabs) {
 };
 
 const nodrivepath = "";
+let allColors = {
+
+};
 function drawItem(node, tabs) {
     attributes = {};
     let draw = `${align(tabs)}class ${node.arma.name}: ${node.arma.from} {${settings.addComments ? '' : '\n'}`;
@@ -69,12 +72,9 @@ function drawItem(node, tabs) {
             addAttribute("text", `"${nodrivepath}\\data\\images\\${node.parser.imageName}"`, "Design", (node.arma.text !== undefined));
         } else if (node.arma.text !== undefined) {
             addAttribute("text", `"${node.arma.text}"`, "Design", (node.arma.text !== undefined));
-            addAttribute("colorText[]", `${node.arma.colorText}`, "Design", (node.arma.colorText !== undefined));
+            addAttribute("colorText[]", `${(allColors[node.parser.colorHex] > 1) ? `Xd_Color_${node.parser.colorHex}` : node.arma.colorText}`, "Design", (node.arma.colorText !== undefined));
         } else {
-            addAttribute("colorBackground[]", `${node.arma.colorBackground}`, "Design", (node.arma.colorBackground !== undefined));
-        };
-        if (node.arma.colorBackground !== undefined) {
-            console.log(node.arma.name);
+            addAttribute("colorBackground[]", `${(allColors[node.parser.colorHex] > 1) ? `Xd_Color_${node.parser.colorHex}` : node.arma.colorBackground}`, "Design", (node.arma.colorBackground !== undefined));
         };
 
         addAttribute("onLoad", `"uiNamespace setVariable ['#XdControl${node.arma.name}', (_this#0)]"`, "Events", !node.node.hasDefaultName);
@@ -331,13 +331,14 @@ function parseColors(item, data) {
             data.arma.from = "RscPicture";
             data.arma.styles = data.arma.styles.concat(["ST_PICTURE"]);
             data.arma.text = `#(rgb,8,8,3)color(1,1,1,1)`;
-            data.arma.colorText = `Xd_ColorRGBA(${fill.r},${fill.g},${fill.b},${fill.a})`;
+            data.arma.colorText = `Xd_toColor_RGBA(${fill.r},${fill.g},${fill.b},${fill.a})`;
         } else {
+            allColors[item.fill.toHex(true).slice(1,7)] = (allColors[item.fill.toHex(true).slice(1,7)] === undefined) ? 1 : allColors[item.fill.toHex(true).slice(1,7)] + 1;
+            data.parser.colorHex = item.fill.toHex(true).slice(1,7);
             if (data.arma.text === undefined) {
-                console.log(data.arma.name,fill)
-                data.arma.colorBackground = `Xd_ColorRGBA(${fill.r},${fill.g},${fill.b},${fill.a})`;
+                data.arma.colorBackground = `Xd_toColor_RGBA(${fill.r},${fill.g},${fill.b},${fill.a})`;
             } else if (data.type === "CT_STATIC") {
-                data.arma.colorText = `Xd_ColorRGBA(${fill.r},${fill.g},${fill.b},${fill.a})`;
+                data.arma.colorText = `Xd_toColor_RGBA(${fill.r},${fill.g},${fill.b},${fill.a})`;
             };
         };
     };
@@ -394,7 +395,15 @@ function generateContent(selection) {
 #define Xd_FontSize(H) #(((H * 0.00222222) * (getResolution select 1)) / 1080)
 
 /* Colors */
-#define Xd_ColorRGBA(R,G,B,A) { R / 255, G / 255, B / 255, A / 255 }
+#define Xd_toColor_RGBA(R,G,B,A) { R / 255, G / 255, B / 255, A / 255 }
+${Object.entries(allColors).filter(entry => entry[1] > 1).map(entry => {
+    const { Color } = require("scenegraph");
+    let r = `#define Xd_Color_${entry[0]} `;
+    let c = new Color(entry[0], 1);
+    console.log(c.r);
+    r += `Xd_toColor_RGBA(${c.r},${c.g},${c.b},${c.a})`;
+    return r;
+}).join('\n')}
 
 /* IDXs */
 #define Xd_IdBaseline ${settings.IdBaseline}
@@ -408,6 +417,7 @@ function resetSettings() {
 };
 
 async function exportContent(selection) {
+    allColors = {};
     try {
         if (!selection.hasArtboards) throw { name: 'No Artboards Detected', message: 'You must select atleast one Artboard to be able to export your GUI' };
         settings = await SettingsHelper.getAll(settings);
