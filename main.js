@@ -48,7 +48,7 @@ function drawAttributes(attributes, tabs) {
     return draw;
 };
 
-const nodrivepath = "\\ESE\\ESE_Main_E";
+const nodrivepath = "";
 function drawItem(node, tabs) {
     attributes = {};
     let draw = `${align(tabs)}class ${node.arma.name}: ${node.arma.from} {${settings.addComments ? '' : '\n'}`;
@@ -67,8 +67,14 @@ function drawItem(node, tabs) {
 
         if ((node.parser.imageName !== undefined) && settings.exportImages) {
             addAttribute("text", `"${nodrivepath}\\data\\images\\${node.parser.imageName}"`, "Design", (node.arma.text !== undefined));
-        } else {
+        } else if (node.arma.text !== undefined) {
             addAttribute("text", `"${node.arma.text}"`, "Design", (node.arma.text !== undefined));
+            addAttribute("colorText[]", `${node.arma.colorText}`, "Design", (node.arma.colorText !== undefined));
+        } else {
+            addAttribute("colorBackground[]", `${node.arma.colorBackground}`, "Design", (node.arma.colorBackground !== undefined));
+        };
+        if (node.arma.colorBackground !== undefined) {
+            console.log(node.arma.name);
         };
 
         addAttribute("onLoad", `"uiNamespace setVariable ['#XdControl${node.arma.name}', (_this#0)]"`, "Events", !node.node.hasDefaultName);
@@ -111,15 +117,15 @@ function indexItem(node, parent = { indexer: { type: 'Root' }, parser: { path: [
         guid: node.guid,
         indexer: {
             type: node.constructor.name,
-            name: normalize(node.name),
+            name: normalize(node.name.split(':')[0]),
             named: node.hasDefaultName
         },
         original: node,
         parser: {
             id: id,
             idType: `id${(node.constructor.name === 'Artboard') ? 'd' : 'c'}`,
-            path: parent.parser.path.concat([normalize(node.name)]),
-            name: normalize(node.name),
+            path: parent.parser.path.concat([normalize(node.name.split(':')[0])]),
+            name: normalize(node.name.split(':')[0]),
             x: node.globalBounds.x,
             y: node.globalBounds.y,
             w: node.globalBounds.width,
@@ -134,7 +140,7 @@ function indexItem(node, parent = { indexer: { type: 'Root' }, parser: { path: [
         },
         arma: {
             from: 'IGUIBack',
-            name: normalize(node.name),
+            name: normalize(node.name.split(':')[0]),
             type: 'CT_STATIC',
             disabled: node.locked,
             styles: [],
@@ -306,7 +312,7 @@ function parseColors(item, data) {
                 fill = item.fill.toRgba();
                 break;
             case "ImageFill":
-                    fill = { r: 1, g:0, b:1, a:1 };
+                    fill = { r:255, g:0, b:255, a:1 };
                 break;
                 case "LinearGradientFill":
                     fill = item.fill.colorStops[0].color.toRgba();
@@ -325,12 +331,13 @@ function parseColors(item, data) {
             data.arma.from = "RscPicture";
             data.arma.styles = data.arma.styles.concat(["ST_PICTURE"]);
             data.arma.text = `#(rgb,8,8,3)color(1,1,1,1)`;
-            data.arma.colorText = `Xd_ColorA({${fill.r},${fill.g},${fill.b},${fill.a}})`;
+            data.arma.colorText = `Xd_ColorRGBA(${fill.r},${fill.g},${fill.b},${fill.a})`;
         } else {
-            if (data.arma.text !== undefined) {
-                data.arma.colorBackground = fill;
+            if (data.arma.text === undefined) {
+                console.log(data.arma.name,fill)
+                data.arma.colorBackground = `Xd_ColorRGBA(${fill.r},${fill.g},${fill.b},${fill.a})`;
             } else if (data.type === "CT_STATIC") {
-                data.colorText = fill;
+                data.arma.colorText = `Xd_ColorRGBA(${fill.r},${fill.g},${fill.b},${fill.a})`;
             };
         };
     };
@@ -385,6 +392,9 @@ function generateContent(selection) {
 #define Xd_PositionXGroup(X) #((((X * (getResolution select 0)) / 1920) * safeZoneW) / (getResolution select 0))
 #define Xd_PositionYGroup(Y) #((((Y * (getResolution select 1)) / 1080) * safeZoneH) / (getResolution select 1))
 #define Xd_FontSize(H) #(((H * 0.00222222) * (getResolution select 1)) / 1080)
+
+/* Colors */
+#define Xd_ColorRGBA(R,G,B,A) { R / 255, G / 255, B / 255, A / 255 }
 
 /* IDXs */
 #define Xd_IdBaseline ${settings.IdBaseline}
