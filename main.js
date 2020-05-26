@@ -425,7 +425,7 @@ async function exportContent(selection) {
         let main = settingsDialog.querySelector("#a3gesettings");
         settings = {
             licensekey: main.querySelector("#key").value,
-            IdBaseline: main.querySelector("#id").value,
+            IdBaseline: parseInt(main.querySelector("#id").value),
             exportMeta: main.querySelector("#meta").checked,
             addComments: main.querySelector("#comments").checked,
             exportInteractions: main.querySelector("#interactions").checked,
